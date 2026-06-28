@@ -26,9 +26,14 @@ A music player envisioned for the TV in living rooms, parties, and other big scr
 - Spotify API
 - ReactJS
 
-## Next Steps
+## Feature Ideas
 
 - In sync Youtube and Spotify Player
 - 2D/3D Music visualizations
 - Augmented Reality
 - A tvOS app
+
+## How to run local demo
+1. `npm i`
+2. `npm start`
+
