@@ -45,13 +45,35 @@ const HomePage = () => {
         return;
       }
 
-      var result = await getCurrentlyPlaying();
+      let result;
+
+      try {
+        result = await getCurrentlyPlaying();
+      } catch (error) {
+        console.warn('Spotify current track request failed:', error?.response?.status || error?.message);
+        setCurrentlyPlayingSong({
+          type: 'Now Playing',
+          name: 'No Song Playing',
+          artists: [],
+          imageUrl: '',
+        });
+        setRecommendedSong({
+          type: 'Recommended',
+          name: '',
+          id: '',
+          artists: [],
+          imageUrl: '',
+        });
+        return;
+      }
 
       var incomingSong = {};
 
       if (
+        !result?.data ||
         result.data === '' ||
-        result.data.currently_playing_type === 'unknown'
+        result.data.currently_playing_type === 'unknown' ||
+        !result.data.item
       ) {
         incomingSong = {
           type: 'Now Playing',
@@ -72,7 +94,31 @@ const HomePage = () => {
       }
 
       if (!_.isEqual(incomingSong, currentlyPlayingSong)) {
+        if (!incomingSong.id) {
+          setCurrentlyPlayingSong(incomingSong);
+          setRecommendedSong({
+            type: 'Recommended',
+            name: '',
+            id: '',
+            artists: [],
+            imageUrl: '',
+          });
+          return;
+        }
+
         result = await getRecommendations(incomingSong.id);
+
+        if (!result?.data) {
+          setCurrentlyPlayingSong(incomingSong);
+          setRecommendedSong({
+            type: 'Recommended',
+            name: '',
+            id: '',
+            artists: [],
+            imageUrl: '',
+          });
+          return;
+        }
 
         const songJSONPath = result.data;
 

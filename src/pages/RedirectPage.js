@@ -1,29 +1,53 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getHashParams } from '../utils/functions';
+import {
+  getAuthCallbackParams,
+  getHashParams,
+  getToken,
+} from '../utils/functions';
 
 const RedirectPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [didGrabHashParams, setDidGrabHashParams] = useState(false);
+  const [didHandleCallback, setDidHandleCallback] = useState(false);
 
   useEffect(() => {
-    if (didGrabHashParams) {
-      navigate('/');
+    if (didHandleCallback) {
+      return;
     }
-  });
 
-  try {
-    const hashParams = getHashParams(location.hash);
-    const expiryTime = new Date().getTime() + hashParams.expires_in * 1000;
-    localStorage.setItem('params', JSON.stringify(hashParams));
-    localStorage.setItem('expiry_time', expiryTime);
-    if (!didGrabHashParams) {
-      setDidGrabHashParams(true);
+    const queryParams = getAuthCallbackParams(location.search);
+    const hashParams = getAuthCallbackParams(location.hash);
+
+    const code = queryParams.code || null;
+    const accessToken = hashParams.access_token || null;
+
+    if (code) {
+      getToken(code)
+        .then(() => {
+          setDidHandleCallback(true);
+          navigate('/');
+        })
+        .catch(() => {
+          setDidHandleCallback(true);
+          navigate('/login');
+        });
+
+      return;
     }
-  } catch (error) {
-    return <div>Error</div>;
-  }
+
+    if (accessToken) {
+      const expiryTime = Date.now() + Number(hashParams.expires_in || 3600) * 1000;
+      localStorage.setItem('params', JSON.stringify(hashParams));
+      localStorage.setItem('expiry_time', String(expiryTime));
+      setDidHandleCallback(true);
+      navigate('/');
+      return;
+    }
+
+    setDidHandleCallback(true);
+    navigate('/login');
+  }, [didHandleCallback, location.hash, location.search, navigate]);
 
   return <div>Redirecting...</div>;
 };

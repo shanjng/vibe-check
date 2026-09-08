@@ -24,25 +24,39 @@ export const getCurrentlyPlaying = () => {
 };
 
 export const getRecommendations = async (seedTrackId) => {
+  if (!seedTrackId) {
+    return { data: null };
+  }
+
   setSpotifyAuthHeader();
 
-  var response = await axios.get(`${SPOTIFY_BASE_URL}/recommendations`, {
-    params: {
-      seed_tracks: seedTrackId,
-    },
-  });
-  const firstRecommendationSongId = response.data.tracks[0].id;
-
-  response = await axios.get(
-    `${SPOTIFY_BASE_URL}/tracks/${firstRecommendationSongId}`,
-    {
+  try {
+    var response = await axios.get(`${SPOTIFY_BASE_URL}/recommendations`, {
       params: {
         seed_tracks: seedTrackId,
       },
-    }
-  );
+    });
 
-  return response;
+    if (!response?.data?.tracks?.length) {
+      return { data: null };
+    }
+
+    const firstRecommendationSongId = response.data.tracks[0].id;
+
+    response = await axios.get(
+      `${SPOTIFY_BASE_URL}/tracks/${firstRecommendationSongId}`,
+      {
+        params: {
+          seed_tracks: seedTrackId,
+        },
+      }
+    );
+
+    return response;
+  } catch (error) {
+    console.warn('Spotify recommendation request failed:', error?.response?.status || error?.message);
+    return { data: null };
+  }
 };
 
 export const queueSong = (id) => {
